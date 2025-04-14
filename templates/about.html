@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>عن الكلية</title>
+    <style>
+        body {
+            font-family: 'Tajawal', 'Arial', sans-serif;
+            background-color: #4caf50;
+            direction: rtl;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+        .navbar {
+            background-color: #2e7d32;
+            padding: 20px 40px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .navbar a {
+            color: #ffffff;
+            text-decoration: none;
+            margin: 0 25px;
+            font-size: 18px;
+            font-weight: 500;
+            padding: 10px 20px;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .navbar a:hover {
+            background-color: #4caf50;
+            transform: translateY(-2px);
+        }
+        .navbar a.active {
+            background-color: #4caf50;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .container {
+            margin: 40px auto;
+            padding: 30px;
+            background-color: #ffffff;
+            border-radius: 15px;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+            max-width: 750px;
+            text-align: center;
+            animation: slideUp 0.6s ease-out;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        h1 {
+            color: #2e7d32;
+            font-size: 30px;
+            margin-bottom: 15px;
+            animation: fadeIn 1s ease;
+        }
+        p {
+            color: #37474f;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        .logo {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            width: 80px;
+            z-index: 1000;
+        }
+        p, a {
+            unicode-bidi: embed;
+            text-rendering: optimizeLegibility;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <img src="/static/images/logo.png" alt="شعار المنصة" class="logo">
+    <div class="navbar">
+        <a href="/">الصفحة الرئيسية</a>
+        <a href="/guide">الدليل التفاعلي</a>
+        <a href="/report">الإبلاغ عن مشكلة</a>
+        <a href="/about" class="active">عن الكلية</a>
+        <a href="/login">تسجيل الدخول</a>
+    </div>
+    <div class="container">
+        <h1>عن الكلية</h1>
+        <p>مرحبًا بك في منصة الدعم الذكي! هنا يمكنك التعرف على الكلية وخدماتنا.</p>
+        <p>نحن ملتزمون بتقديم دعم تقني متميز للطلاب والموظفين.</p>
+    </div>
+</body>
+</html>

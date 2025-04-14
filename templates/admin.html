@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم الدعم الفني</title>
+    <style>
+        body {
+            font-family: 'Tajawal', 'Arial', sans-serif;
+            background-color: #4caf50;
+            direction: rtl;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+        .navbar {
+            background-color: #2e7d32;
+            padding: 20px 40px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .navbar a {
+            color: #ffffff;
+            text-decoration: none;
+            margin: 0 25px;
+            font-size: 18px;
+            font-weight: 500;
+            padding: 10px 20px;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .navbar a:hover {
+            background-color: #4caf50;
+            transform: translateY(-2px);
+        }
+        .container {
+            margin: 40px auto;
+            padding: 30px;
+            background-color: #ffffff;
+            border-radius: 15px;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+            max-width: 1000px;
+            text-align: center;
+            animation: slideUp 0.6s ease-out;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        h1 {
+            color: #2e7d32;
+            font-size: 30px;
+            margin-bottom: 15px;
+            animation: fadeIn 1s ease;
+        }
+        p {
+            color: #37474f;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        input[type="text"], textarea {
+            width: 85%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 2px solid #81c784;
+            border-radius: 8px;
+            font-family: 'Tajawal', 'Arial', sans-serif;
+            font-size: 16px;
+            text-align: right;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        input:focus, textarea:focus {
+            border-color: #2e7d32;
+            outline: none;
+        }
+        button {
+            padding: 12px 35px;
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Tajawal', 'Arial', sans-serif;
+            font-size: 16px;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            margin: 10px;
+        }
+        button:hover {
+            background-color: #2e7d32;
+            transform: translateY(-2px);
+        }
+        button.delete {
+            background-color: #d32f2f;
+        }
+        button.delete:hover {
+            background-color: #b71c1c;
+        }
+        .ticket, .guide-item {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #e8f5e9;
+            border-radius: 8px;
+            text-align: right;
+            border-right: 4px solid #4caf50;
+        }
+        .ticket p, .guide-item p {
+            margin: 5px 0;
+        }
+        .message {
+            color: #2e7d32;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        details {
+            margin: 20px 0;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        summary {
+            padding: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #2e7d32;
+            cursor: pointer;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        summary::after {
+            content: '+';
+            font-size: 24px;
+            color: #4caf50;
+        }
+        details[open] summary::after {
+            content: '−';
+        }
+        .section-content {
+            padding: 15px;
+            text-align: right;
+        }
+        .logo {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            width: 80px;
+            z-index: 1000;
+        }
+        p, input, textarea, button, a {
+            unicode-bidi: embed;
+            text-rendering: optimizeLegibility;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <img src="/static/images/logo.png" alt="شعار المنصة" class="logo">
+    <div class="navbar">
+        <a href="/">الصفحة الرئيسية</a>
+        <a href="/guide">الدليل التفاعلي</a>
+        <a href="/report">الإبلاغ عن مشكلة</a>
+        <a href="/about">عن الكلية</a>
+        <a href="/logout">تسجيل الخروج</a>
+    </div>
+    <div class="container">
+        <h1>لوحة تحكم الدعم الفني</h1>
+        {% if message %}
+        <p class="message">{{ message }}</p>
+        {% endif %}
+
+        <!-- إدارة التذاكر -->
+        <details>
+            <summary>إدارة التذاكر</summary>
+            <div class="section-content">
+                {% if tickets %}
+                    {% for ticket in tickets %}
+                    <div class="ticket">
+                        <p><strong>رقم التذكرة:</strong> {{ ticket.id }}</p>
+                        <p><strong>الاسم:</strong> {{ ticket.name }}</p>
+                        <p><strong>البريد الإلكتروني:</strong> {{ ticket.email }}</p>
+                        <p><strong>الرقم التدريبي:</strong> {{ ticket.student_id }}</p>
+                        <p><strong>الموضوع:</strong> {{ ticket.subject }}</p>
+                        <p><strong>المشكلة:</strong> {{ ticket.problem }}</p>
+                        <p><strong>حالة التذكرة:</strong> {{ ticket.status }}</p>
+                        <p><strong>رد المستخدم:</strong> {{ ticket.user_response or 'لا يوجد رد' }}</p>
+                        <p><strong>رد الدعم:</strong> {{ ticket.support_response or 'لا يوجد رد' }}</p>
+                        <form method="POST">
+                            <input type="hidden" name="ticket_id" value="{{ ticket.id }}">
+                            <textarea name="support_response" placeholder="أدخل رد الدعم"></textarea>
+                            <button type="submit">إرسال الرد</button>
+                        </form>
+                        <form method="POST">
+                            <input type="hidden" name="delete_ticket_id" value="{{ ticket.id }}">
+                            <button type="submit" class="delete">حذف التذكرة</button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p>لا توجد تذاكر متاحة.</p>
+                {% endif %}
+            </div>
+        </details>
+
+        <!-- إدارة الدليل التفاعلي -->
+        <details>
+            <summary>إدارة الدليل التفاعلي</summary>
+            <div class="section-content">
+                <form method="POST">
+                    <input type="text" name="question" placeholder="أدخل السؤال" required>
+                    <textarea name="answer" placeholder="أدخل الإجابة" required></textarea>
+                    <button type="submit">إضافة سؤال</button>
+                </form>
+                <details>
+                    <summary>الأسئلة الحالية</summary>
+                    <div class="section-content">
+                        {% for question, answer in responses.items() %}
+                        <div class="guide-item">
+                            <p><strong>السؤال:</strong> {{ question }}</p>
+                            <p><strong>الإجابة:</strong> {{ answer }}</p>
+                            <form method="POST" style="display: inline;">
+                                <input type="hidden" name="old_question" value="{{ question }}">
+                                <input type="text" name="new_question" value="{{ question }}" required>
+                                <textarea name="new_answer" required>{{ answer }}</textarea>
+                                <button type="submit" name="edit_question">تعديل</button>
+                            </form>
+                            <form method="POST" style="display: inline;">
+                                <input type="hidden" name="delete_question" value="{{ question }}">
+                                <button type="submit" class="delete">حذف</button>
+                            </form>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </details>
+            </div>
+        </details>
+    </div>
+</body>
+</html>
