@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>الإبلاغ عن مشكلة</title>
+    <title>فتح تذكرة</title>
     <style>
         body {
             font-family: 'Tajawal', 'Arial', sans-serif;
@@ -115,14 +115,47 @@
         }
         .ticket {
             margin: 20px 0;
-            padding: 15px;
-            background-color: #e8f5e9;
-            border-radius: 8px;
+            padding: 20px;
+            background-color: #f1f8e9;
+            border-radius: 10px;
+            border: 2px solid #a5d6a7;
             text-align: right;
-            border-right: 4px solid #4caf50;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        .ticket.hidden {
+            display: none;
         }
         .ticket p {
-            margin: 5px 0;
+            margin: 8px 0;
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+        .ticket p strong {
+            color: #2e7d32;
+        }
+        .ticket .subject {
+            background-color: #e8f5e9;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .ticket .problem {
+            background-color: #f5f5f5;
+        }
+        .ticket .user-response {
+            background-color: #e3f2fd;
+            border-right: 4px solid #2196f3;
+        }
+        .ticket .support-response {
+            background-color: #fff3e0;
+            border-right: 4px solid #ff9800;
+        }
+        .ticket::before {
+            content: '📋';
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 24px;
         }
         .logo {
             position: fixed;
@@ -130,6 +163,42 @@
             right: 10px;
             width: 80px;
             z-index: 1000;
+        }
+        details {
+            margin: 20px 0;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        summary {
+            padding: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #2e7d32;
+            cursor: pointer;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        summary::after {
+            content: '+';
+            font-size: 24px;
+            color: #4caf50;
+        }
+        details[open] summary::after {
+            content: '−';
+        }
+        .section-content {
+            padding: 15px;
+            text-align: right;
+        }
+        .toggle-tickets {
+            background-color: #0288d1;
+            margin-bottom: 20px;
+        }
+        .toggle-tickets:hover {
+            background-color: #01579b;
         }
         p, input, textarea, button, a {
             unicode-bidi: embed;
@@ -147,18 +216,18 @@
     <div class="navbar">
         <a href="/">الصفحة الرئيسية</a>
         <a href="/guide">الدليل التفاعلي</a>
-        <a href="/report" class="active">الإبلاغ عن مشكلة</a>
+        <a href="/report" class="active">فتح تذكرة</a>
         <a href="/about">عن الكلية</a>
         <a href="/login">تسجيل الدخول</a>
     </div>
     <div class="container">
-        <h1>الإبلاغ عن مشكلة</h1>
+        <h1>فتح تذكرة</h1>
         <p>املأ النموذج أدناه لإنشاء تذكرة دعم جديدة.</p>
         <form method="POST">
             <input type="text" name="name" placeholder="الاسم الكامل" required>
             <input type="text" name="email" placeholder="البريد الإلكتروني" required>
             <input type="text" name="student_id" placeholder="الرقم التدريبي" required>
-            <input type="text" name="subject" placeholder="موضوع المشكلة" required>
+            <input type="text" name="subject" placeholder="موضوع التذكرة" required>
             <textarea name="problem" placeholder="وصف المشكلة" required></textarea>
             <button type="submit">إرسال التذكرة</button>
         </form>
@@ -166,16 +235,18 @@
         <p class="message">{{ message }}</p>
         {% endif %}
         {% if ticket %}
+        <button class="toggle-tickets" onclick="toggleTickets()">إخفاء التذاكر</button>
         <div class="ticket">
-            <p><strong>رقم التذكرة:</strong> {{ ticket.id }}</p>
+            <p class="subject"><strong>رقم التذكرة:</strong> {{ ticket.id }}</p>
             <p><strong>الاسم:</strong> {{ ticket.name }}</p>
             <p><strong>البريد الإلكتروني:</strong> {{ ticket.email }}</p>
             <p><strong>الرقم التدريبي:</strong> {{ ticket.student_id }}</p>
-            <p><strong>الموضوع:</strong> {{ ticket.subject }}</p>
-            <p><strong>المشكلة:</strong> {{ ticket.problem }}</p>
+            <p class="subject"><strong>الموضوع:</strong> {{ ticket.subject }}</p>
+            <p class="problem"><strong>المشكلة:</strong> {{ ticket.problem }}</p>
             <p><strong>حالة التذكرة:</strong> {{ ticket.status }}</p>
-            <p><strong>رد الدعم:</strong> {{ ticket.support_response or 'لا يوجد رد' }}</p>
-            <p><strong>رد المستخدم:</strong> {{ ticket.user_response or 'لا يوجد رد' }}</p>
+            <p><strong>حالة القراءة:</strong> {% if ticket.read_by_support %}تمت قراءة شكواك{% else %}الدعم غير متصل{% endif %}</p>
+            <p class="user-response"><strong>رد المستخدم:</strong> {{ ticket.user_response or 'لا يوجد رد' }}</p>
+            <p class="support-response"><strong>رد الدعم:</strong> {{ ticket.support_response or 'لا يوجد رد' }}</p>
             <form method="POST" action="/respond_ticket">
                 <input type="hidden" name="ticket_id" value="{{ ticket.id }}">
                 <textarea name="user_response" placeholder="أدخل ردك هنا"></textarea>
@@ -187,6 +258,57 @@
             </form>
         </div>
         {% endif %}
+
+        <!-- قسم الاستعلام عن تذكرة -->
+        <details>
+            <summary>الاستعلام عن تذكرة</summary>
+            <div class="section-content">
+                <form method="POST">
+                    <input type="text" name="search_query" placeholder="رقم التذكرة أو الرقم التدريبي" required>
+                    <button type="submit">استعلام</button>
+                </form>
+                {% if search_message %}
+                <p class="message">{{ search_message }}</p>
+                {% endif %}
+                {% if search_tickets %}
+                <button class="toggle-tickets" onclick="toggleTickets()">إخفاء التذاكر</button>
+                {% for ticket in search_tickets %}
+                <div class="ticket">
+                    <p class="subject"><strong>رقم التذكرة:</strong> {{ ticket.id }}</p>
+                    <p><strong>الاسم:</strong> {{ ticket.name }}</p>
+                    <p><strong>البريد الإلكتروني:</strong> {{ ticket.email }}</p>
+                    <p><strong>الرقم التدريبي:</strong> {{ ticket.student_id }}</p>
+                    <p class="subject"><strong>الموضوع:</strong> {{ ticket.subject }}</p>
+                    <p class="problem"><strong>المشكلة:</strong> {{ ticket.problem }}</p>
+                    <p><strong>حالة التذكرة:</strong> {{ ticket.status }}</p>
+                    <p><strong>حالة القراءة:</strong> {% if ticket.read_by_support %}تمت قراءة شكواك{% else %}الدعم غير متصل{% endif %}</p>
+                    <p class="user-response"><strong>رد المستخدم:</strong> {{ ticket.user_response or 'لا يوجد رد' }}</p>
+                    <p class="support-response"><strong>رد الدعم:</strong> {{ ticket.support_response or 'لا يوجد رد' }}</p>
+                    <form method="POST" action="/respond_ticket">
+                        <input type="hidden" name="ticket_id" value="{{ ticket.id }}">
+                        <textarea name="user_response" placeholder="أدخل ردك هنا"></textarea>
+                        <button type="submit">إرسال الرد</button>
+                    </form>
+                    <form method="POST" action="/delete_ticket">
+                        <input type="hidden" name="ticket_id" value="{{ ticket.id }}">
+                        <button type="submit" class="delete">حذف التذكرة</button>
+                    </form>
+                </div>
+                {% endfor %}
+                {% endif %}
+            </div>
+        </details>
     </div>
+    <script>
+        function toggleTickets() {
+            const tickets = document.querySelectorAll('.ticket');
+            const button = document.querySelector('.toggle-tickets');
+            const isHidden = tickets[0].classList.contains('hidden');
+            tickets.forEach(ticket => {
+                ticket.classList.toggle('hidden', !isHidden);
+            });
+            button.textContent = isHidden ? 'إخفاء التذاكر' : 'إظهار التذاكر';
+        }
+    </script>
 </body>
 </html>

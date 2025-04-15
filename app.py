@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, make_response, redirect, url_for, session
+from flask_sqlalchemy import SQLAlchemy
 import sys
 import io
-import json
 import os
 import random
 from fuzzywuzzy import fuzz
@@ -11,30 +11,49 @@ from datetime import datetime
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 app = Flask(__name__)
-app.secret_key = "super_secret_key"
+app.secret_key = os.environ.get("SECRET_KEY", "super_secret_key")
 
-# تحميل الأسئلة من guide.json
+# إعداد قاعدة البيانات
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL", "sqlite:///site.db")  # سيتم استبداله بـ PostgreSQL على Render
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+
+# نموذج التذكرة
+class Ticket(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120), nullable=False)
+    student_id = db.Column(db.String(50), nullable=False)
+    subject = db.Column(db.String(200), nullable=False)
+    problem = db.Column(db.Text, nullable=False)
+    status = db.Column(db.String(50), nullable=False, default="جديدة")
+    support_response = db.Column(db.Text, nullable=True)
+    user_response = db.Column(db.Text, nullable=True)
+    read_by_support = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+# نموذج الأسئلة (الدليل التفاعلي)
+class Guide(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    question = db.Column(db.String(500), nullable=False, unique=True)
+    answer = db.Column(db.Text, nullable=False)
+
+# إنشاء قاعدة البيانات
+with app.app_context():
+    db.create_all()
+    # إضافة بيانات افتراضية للدليل إذا لم تكن موجودة
+    if not Guide.query.first():
+        default_guides = [
+            Guide(question="كيف أتصل بشبكة الواي فاي في الكلية؟", answer="افتح إعدادات الواي فاي، ابحث عن College-WiFi، أدخل رقمك الجامعي وكلمة المرور."),
+            Guide(question="كيف أستخدم Microsoft Teams؟", answer="حمل تطبيق Teams، سجل الدخول ببريدك الجامعي، انضم إلى الاجتماع عبر رابط أو رمز.")
+        ]
+        db.session.bulk_save_objects(default_guides)
+        db.session.commit()
+
+# تحميل الأسئلة من قاعدة البيانات
 def load_responses():
-    if os.path.exists("guide.json"):
-        with open("guide.json", "r", encoding="utf-8") as f:
-            return json.load(f)
-    return {
-        "كيف أتصل بشبكة الواي فاي في الكلية؟": "افتح إعدادات الواي فاي، ابحث عن College-WiFi، أدخل رقمك الجامعي وكلمة المرور.",
-        "كيف أستخدم Microsoft Teams؟": "حمل تطبيق Teams، سجل الدخول ببريدك الجامعي، انضم إلى الاجتماع عبر رابط أو رمز."
-    }
-
-# ملف التذاكر
-TICKETS_FILE = "tickets.json"
-
-def load_tickets():
-    if os.path.exists(TICKETS_FILE):
-        with open(TICKETS_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return []
-
-def save_tickets(tickets):
-    with open(TICKETS_FILE, "w", encoding="utf-8") as f:
-        json.dump(tickets, f, ensure_ascii=False, indent=4)
+    guides = Guide.query.all()
+    return {guide.question: guide.answer for guide in guides}
 
 # الصفحة الرئيسية
 @app.route("/", methods=["GET", "POST"])
@@ -55,35 +74,59 @@ def home():
     response.headers['Content-Type'] = 'text/html; charset=utf-8'
     return response
 
-# صفحة الإبلاغ
+# صفحة فتح تذكرة
 @app.route("/report", methods=["GET", "POST"])
 def report():
     message = ""
-    ticket = None
+    ticket = session.pop("new_ticket", None)  # استرجاع التذكرة من الجلسة إن وجدت
+    search_tickets = []
+    search_message = ""
+    
     if request.method == "POST":
-        name = request.form.get("name")
-        email = request.form.get("email")
-        student_id = request.form.get("student_id")
-        subject = request.form.get("subject")
-        problem = request.form.get("problem")
-        ticket_id = random.randint(1000, 9999)
-        tickets = load_tickets()
-        new_ticket = {
-            "id": ticket_id,
-            "name": name,
-            "email": email,
-            "student_id": student_id,
-            "subject": subject,
-            "problem": problem,
-            "status": "جديدة",
-            "support_response": "",
-            "user_response": ""
-        }
-        tickets.append(new_ticket)
-        save_tickets(tickets)
-        message = f"تم إنشاء تذكرتك بنجاح! رقم التذكرة: {ticket_id}."
-        ticket = new_ticket  # تمرير التذكرة لعرضها
-    response = make_response(render_template("report.html", message=message, ticket=ticket))
+        if "search_query" in request.form:
+            search_query = request.form.get("search_query")
+            search_tickets = Ticket.query.filter(
+                (Ticket.id == search_query) | (Ticket.student_id == search_query)
+            ).all()
+            if not search_tickets:
+                search_message = "لم يتم العثور على تذكرة مطابقة."
+        elif "name" in request.form:
+            name = request.form.get("name")
+            email = request.form.get("email")
+            student_id = request.form.get("student_id")
+            subject = request.form.get("subject")
+            problem = request.form.get("problem")
+            ticket_id = random.randint(1000, 9999)
+            new_ticket = Ticket(
+                id=ticket_id,
+                name=name,
+                email=email,
+                student_id=student_id,
+                subject=subject,
+                problem=problem,
+                status="جديدة",
+                support_response="",
+                user_response="",
+                read_by_support=False
+            )
+            db.session.add(new_ticket)
+            db.session.commit()
+            session["new_ticket"] = {
+                "id": new_ticket.id,
+                "name": new_ticket.name,
+                "email": new_ticket.email,
+                "student_id": new_ticket.student_id,
+                "subject": new_ticket.subject,
+                "problem": new_ticket.problem,
+                "status": new_ticket.status,
+                "support_response": new_ticket.support_response,
+                "user_response": new_ticket.user_response,
+                "read_by_support": new_ticket.read_by_support
+            }
+            message = f"تم إنشاء تذكرتك بنجاح! رقم التذكرة: {ticket_id}."
+            return redirect(url_for("report"))
+
+    response = make_response(render_template("report.html", message=message, ticket=ticket, search_tickets=search_tickets, search_message=search_message))
     response.headers['Content-Type'] = 'text/html; charset=utf-8'
     return response
 
@@ -92,31 +135,35 @@ def report():
 def respond_ticket():
     ticket_id = request.form.get("ticket_id")
     user_response = request.form.get("user_response")
-    tickets = load_tickets()
-    ticket = None
-    for t in tickets:
-        if str(t["id"]) == ticket_id:
-            t["user_response"] = user_response
-            t["status"] = "في انتظار رد الدعم"
-            ticket = t
-            break
-    save_tickets(tickets)
-    message = "تم إرسال ردك بنجاح!"
-    response = make_response(render_template("report.html", message=message, ticket=ticket))
-    response.headers['Content-Type'] = 'text/html; charset=utf-8'
-    return response
+    ticket = Ticket.query.get(ticket_id)
+    if ticket:
+        ticket.user_response = user_response
+        ticket.status = "في انتظار رد الدعم"
+        db.session.commit()
+        session["new_ticket"] = {
+            "id": ticket.id,
+            "name": ticket.name,
+            "email": ticket.email,
+            "student_id": ticket.student_id,
+            "subject": ticket.subject,
+            "problem": ticket.problem,
+            "status": ticket.status,
+            "support_response": ticket.support_response,
+            "user_response": ticket.user_response,
+            "read_by_support": ticket.read_by_support
+        }
+    return redirect(url_for("report"))
 
-# حذف تذكرة (للمستخدم والدعم الفني)
+# حذف تذكرة
 @app.route("/delete_ticket", methods=["POST"])
 def delete_ticket():
     ticket_id = request.form.get("ticket_id")
-    tickets = load_tickets()
-    tickets = [t for t in tickets if str(t["id"]) != ticket_id]
-    save_tickets(tickets)
-    message = "تم حذف التذكرة بنجاح!"
-    response = make_response(render_template("report.html", message=message))
-    response.headers['Content-Type'] = 'text/html; charset=utf-8'
-    return response
+    ticket = Ticket.query.get(ticket_id)
+    if ticket:
+        db.session.delete(ticket)
+        db.session.commit()
+    session.pop("new_ticket", None)
+    return redirect(url_for("report"))
 
 # الدليل التفاعلي
 @app.route("/guide")
@@ -139,7 +186,8 @@ def login():
     error = ""
     if request.method == "POST":
         code = request.form.get("code")
-        if code == "Tvtc.101":
+        admin_code = os.environ.get("ADMIN_CODE", "Tvtc.101")
+        if code == admin_code:
             session["admin"] = True
             return redirect(url_for("admin"))
         else:
@@ -154,56 +202,77 @@ def admin():
     if not session.get("admin"):
         return redirect(url_for("login"))
     
-    tickets = load_tickets()
+    tickets = Ticket.query.all()
     message = ""
     responses = load_responses()
+    search_query = request.form.get("search_query", "") if request.method == "POST" else ""
+    
+    # تصفية التذاكر بناءً على البحث
+    if search_query:
+        tickets = Ticket.query.filter(
+            (Ticket.id == search_query) | (Ticket.student_id == search_query)
+        ).all()
+    
+    # تحديث حالة القراءة
+    for ticket in tickets:
+        ticket.read_by_support = True
+    db.session.commit()
     
     if request.method == "POST":
         if "ticket_id" in request.form and "support_response" in request.form:
             ticket_id = request.form.get("ticket_id")
             support_response = request.form.get("support_response")
-            for t in tickets:
-                if str(t["id"]) == ticket_id:
-                    t["support_response"] = support_response
-                    t["status"] = "تم الرد"
-                    break
-            save_tickets(tickets)
-            message = "تم إرسال الرد بنجاح!"
+            ticket = Ticket.query.get(ticket_id)
+            if ticket:
+                ticket.support_response = support_response
+                ticket.status = "تم الرد"
+                db.session.commit()
+                message = "تم إرسال الرد بنجاح!"
         
         elif "delete_ticket_id" in request.form:
             ticket_id = request.form.get("delete_ticket_id")
-            tickets = [t for t in tickets if str(t["id"]) != ticket_id]
-            save_tickets(tickets)
-            message = "تم حذف التذكرة بنجاح!"
+            ticket = Ticket.query.get(ticket_id)
+            if ticket:
+                db.session.delete(ticket)
+                db.session.commit()
+                message = "تم حذف التذكرة بنجاح!"
         
         elif "question" in request.form and "answer" in request.form:
             question = request.form.get("question")
             answer = request.form.get("answer")
-            responses[question] = answer
-            with open("guide.json", "w", encoding="utf-8") as f:
-                json.dump(responses, f, ensure_ascii=False, indent=4)
-            message = "تم إضافة السؤال بنجاح!"
+            new_guide = Guide(question=question, answer=answer)
+            db.session.add(new_guide)
+            try:
+                db.session.commit()
+                message = "تم إضافة السؤال بنجاح!"
+            except:
+                db.session.rollback()
+                message = "خطأ: السؤال موجود بالفعل."
         
         elif "edit_question" in request.form:
             old_question = request.form.get("old_question")
             new_question = request.form.get("new_question")
             new_answer = request.form.get("new_answer")
-            if old_question in responses:
-                del responses[old_question]
-                responses[new_question] = new_answer
-                with open("guide.json", "w", encoding="utf-8") as f:
-                    json.dump(responses, f, ensure_ascii=False, indent=4)
-                message = "تم تعديل السؤال بنجاح!"
+            guide = Guide.query.filter_by(question=old_question).first()
+            if guide:
+                guide.question = new_question
+                guide.answer = new_answer
+                try:
+                    db.session.commit()
+                    message = "تم تعديل السؤال بنجاح!"
+                except:
+                    db.session.rollback()
+                    message = "خطأ: السؤال الجديد موجود بالفعل."
         
         elif "delete_question" in request.form:
             question = request.form.get("delete_question")
-            if question in responses:
-                del responses[question]
-                with open("guide.json", "w", encoding="utf-8") as f:
-                    json.dump(responses, f, ensure_ascii=False, indent=4)
+            guide = Guide.query.filter_by(question=question).first()
+            if guide:
+                db.session.delete(guide)
+                db.session.commit()
                 message = "تم حذف السؤال بنجاح!"
     
-    response = make_response(render_template("admin.html", tickets=tickets, message=message, responses=responses))
+    response = make_response(render_template("admin.html", tickets=tickets, message=message, responses=responses, search_query=search_query))
     response.headers['Content-Type'] = 'text/html; charset=utf-8'
     return response
 
@@ -214,4 +283,5 @@ def logout():
     return redirect(url_for("home"))
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
