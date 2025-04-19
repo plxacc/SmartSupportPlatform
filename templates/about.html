@@ -24,10 +24,16 @@
             justify-content: center;
             align-items: center;
         }
+        .navbar .nav-links {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+        }
         .navbar a {
             color: #ffffff;
             text-decoration: none;
-            margin: 0 25px;
+            margin: 0 15px;
             font-size: 18px;
             font-weight: 500;
             padding: 10px 20px;
@@ -94,17 +100,54 @@
             from { opacity: 0; }
             to { opacity: 1; }
         }
+        .hamburger {
+            display: none;
+            font-size: 24px;
+            color: #ffffff;
+            cursor: pointer;
+            padding: 10px;
+        }
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 10px 20px;
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .navbar .nav-links {
+                display: none;
+                flex-direction: column;
+                width: 100%;
+                background-color: #2e7d32;
+                padding: 10px 0;
+            }
+            .navbar .nav-links.active {
+                display: flex;
+            }
+            .navbar a {
+                margin: 5px 0;
+                font-size: 16px;
+                padding: 8px 15px;
+                width: 100%;
+                text-align: center;
+            }
+            .hamburger {
+                display: block;
+            }
+        }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <img src="/static/images/logo.png" alt="شعار المنصة" class="logo">
     <div class="navbar">
-        <a href="/">الصفحة الرئيسية</a>
-        <a href="/guide">الدليل التفاعلي</a>
-        <a href="/report">فتح تذكرة</a>
-        <a href="/about" class="active">عن الكلية</a>
-        <a href="/login">تسجيل الدخول</a>
+        <div class="hamburger" onclick="toggleMenu()">☰</div>
+        <div class="nav-links">
+            <a href="/">الصفحة الرئيسية</a>
+            <a href="/guide">الدليل التفاعلي</a>
+            <a href="/report">فتح تذكرة</a>
+            <a href="/about" class="active">عن الكلية</a>
+            <a href="/login">تسجيل الدخول</a>
+        </div>
     </div>
     <div class="container">
         <h1>عن الكلية</h1>
@@ -118,5 +161,11 @@
             <p>موقع خدمات المتدربين: <a href="https://www.quctsservice.net/studentSearchID.php" target="_blank">خدمات المتدربين</a></p>
         </div>
     </div>
+    <script>
+        function toggleMenu() {
+            const navLinks = document.querySelector('.nav-links');
+            navLinks.classList.toggle('active');
+        }
+    </script>
 </body>
 </html>
