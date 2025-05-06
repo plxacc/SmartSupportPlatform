@@ -14,7 +14,7 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "super_secret_key")
 
 # إعداد قاعدة البيانات
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL", "sqlite:///site.db")  # سيتم استبداله بـ PostgreSQL على Render
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL", "sqlite:///site.db")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
@@ -78,10 +78,10 @@ def home():
 @app.route("/report", methods=["GET", "POST"])
 def report():
     message = ""
-    ticket = session.pop("new_ticket", None)  # استرجاع التذكرة من الجلسة إن وجدت
+    ticket = session.pop("new_ticket", None)
     search_tickets = []
     search_message = ""
-    
+
     if request.method == "POST":
         if "search_query" in request.form:
             search_query = request.form.get("search_query")
@@ -201,23 +201,23 @@ def login():
 def admin():
     if not session.get("admin"):
         return redirect(url_for("login"))
-    
+
     tickets = Ticket.query.all()
     message = ""
     responses = load_responses()
     search_query = request.form.get("search_query", "") if request.method == "POST" else ""
-    
+
     # تصفية التذاكر بناءً على البحث
     if search_query:
         tickets = Ticket.query.filter(
             (Ticket.id == search_query) | (Ticket.student_id == search_query)
         ).all()
-    
+
     # تحديث حالة القراءة
     for ticket in tickets:
         ticket.read_by_support = True
     db.session.commit()
-    
+
     if request.method == "POST":
         if "ticket_id" in request.form and "support_response" in request.form:
             ticket_id = request.form.get("ticket_id")
@@ -271,7 +271,7 @@ def admin():
                 db.session.delete(guide)
                 db.session.commit()
                 message = "تم حذف السؤال بنجاح!"
-    
+
     response = make_response(render_template("admin.html", tickets=tickets, message=message, responses=responses, search_query=search_query))
     response.headers['Content-Type'] = 'text/html; charset=utf-8'
     return response

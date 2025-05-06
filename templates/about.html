@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>عن الكلية</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <style>
         body {
             font-family: 'Tajawal', 'Arial', sans-serif;
@@ -12,42 +14,6 @@
             margin: 0;
             padding: 0;
             min-height: 100vh;
-        }
-        .navbar {
-            background-color: #2e7d32;
-            padding: 20px 40px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .navbar .nav-links {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .navbar a {
-            color: #ffffff;
-            text-decoration: none;
-            margin: 0 15px;
-            font-size: 18px;
-            font-weight: 500;
-            padding: 10px 20px;
-            border-radius: 25px;
-            transition: all 0.3s ease;
-            position: relative;
-        }
-        .navbar a:hover {
-            background-color: #4caf50;
-            transform: translateY(-2px);
-        }
-        .navbar a.active {
-            background-color: #4caf50;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
         .container {
             margin: 40px auto;
@@ -91,6 +57,11 @@
             right: 10px;
             width: 80px;
             z-index: 1000;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        .logo:hover {
+            transform: scale(1.1);
+            opacity: 0.9;
         }
         p, a {
             unicode-bidi: embed;
@@ -100,55 +71,60 @@
             from { opacity: 0; }
             to { opacity: 1; }
         }
-        .hamburger {
-            display: none;
-            font-size: 24px;
-            color: #ffffff;
-            cursor: pointer;
-            padding: 10px;
+        /* تخصيص Navbar */
+        .navbar {
+            background-color: #2e7d32 !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
-        @media (max-width: 768px) {
-            .navbar {
-                padding: 10px 20px;
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            .navbar .nav-links {
-                display: none;
-                flex-direction: column;
-                width: 100%;
-                background-color: #2e7d32;
-                padding: 10px 0;
-            }
-            .navbar .nav-links.active {
-                display: flex;
-            }
-            .navbar a {
-                margin: 5px 0;
-                font-size: 16px;
-                padding: 8px 15px;
-                width: 100%;
-                text-align: center;
-            }
-            .hamburger {
-                display: block;
-            }
+        .navbar-nav .nav-link {
+            color: #ffffff !important;
+            font-size: 18px;
+            font-weight: 500;
+            padding: 10px 20px;
+            border-radius: 25px;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+        }
+        .navbar-nav .nav-link:hover {
+            background-color: #4caf50;
+            transform: translateY(-2px);
+        }
+        .navbar-nav .nav-link.active {
+            background-color: #4caf50;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <img src="/static/images/logo.png" alt="شعار المنصة" class="logo">
-    <div class="navbar">
-        <div class="hamburger" onclick="toggleMenu()">☰</div>
-        <div class="nav-links">
-            <a href="/">الصفحة الرئيسية</a>
-            <a href="/guide">الدليل التفاعلي</a>
-            <a href="/report">فتح تذكرة</a>
-            <a href="/about" class="active">عن الكلية</a>
-            <a href="/login">تسجيل الدخول</a>
+    <!-- Bootstrap Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container-fluid">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse justify-content-center" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">الصفحة الرئيسية</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/guide">الدليل التفاعلي</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/report">فتح تذكرة</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/about">عن الكلية</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/login">تسجيل الدخول</a>
+                    </li>
+                </ul>
+            </div>
         </div>
-    </div>
+    </nav>
     <div class="container">
         <h1>عن الكلية</h1>
         <p>مرحبًا بك في منصة الدعم الذكي! هنا يمكنك التعرف على الكلية وخدماتنا.</p>
@@ -161,11 +137,7 @@
             <p>موقع خدمات المتدربين: <a href="https://www.quctsservice.net/studentSearchID.php" target="_blank">خدمات المتدربين</a></p>
         </div>
     </div>
-    <script>
-        function toggleMenu() {
-            const navLinks = document.querySelector('.nav-links');
-            navLinks.classList.toggle('active');
-        }
-    </script>
+    <!-- Bootstrap JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 </body>
 </html>
