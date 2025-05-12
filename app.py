@@ -1,17 +1,20 @@
-from flask import Flask, render_template, request, make_response, redirect, url_for, session
+from flask import Flask, render_template, request, make_response, redirect, url_for, session, jsonify
 from flask_sqlalchemy import SQLAlchemy
 import sys
 import io
 import os
 import random
-from fuzzywuzzy import fuzz
 from datetime import datetime
+import requests
 
 # ضبط الترميز لدعم العربية
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "super_secret_key")
+
+# إعداد DeepSeek API
+DEEPSEEK_API_KEY = "sk-cc2115d5a18144c191aeb48416dd9824"  # استبدل هذا بمفتاح API الخاص بك
 
 # إعداد قاعدة البيانات
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL", "sqlite:///site.db")
@@ -55,24 +58,75 @@ def load_responses():
     guides = Guide.query.all()
     return {guide.question: guide.answer for guide in guides}
 
+# دالة للتواصل مع DeepSeek API
+def get_ai_response(question):
+    api_url = "https://api.deepseek.com/v1/chat/completions"
+    headers = {"Authorization": f"Bearer {DEEPSEEK_API_KEY}"}
+    payload = {
+        "model": "deepseek-chat",  # يمكنك استخدام "deepseek-reasoner" للمهام التقنية
+        "messages": [
+            {"role": "system", "content": "أجب بالعربية بطريقة طبيعية وودودة."},
+            {"role": "user", "content": question}
+        ],
+        "max_tokens": 200,
+        "temperature": 0.7
+    }
+    try:
+        response = requests.post(api_url, headers=headers, json=payload)
+        response.raise_for_status()
+        result = response.json()
+        print(f"API response: {result}")
+        if "choices" in result and result["choices"]:
+            answer = result["choices"][0]["message"]["content"].strip()
+            if not answer:
+                return "آسف، لم أفهم سؤالك جيدًا. هل يمكنك إعادة صياغته بطريقة أخرى؟"
+            return answer
+        else:
+            print("Unexpected API response format")
+            return "آسف، الرد من API غير متوقع. دعني أحاول مرة أخرى!"
+    except Exception as e:
+        print(f"DeepSeek API error: {str(e)}")
+        return f"عذرًا، حدث خطأ في API: {str(e)}"
+
 # الصفحة الرئيسية
-@app.route("/", methods=["GET", "POST"])
+@app.route("/", methods=["GET"])
 def home():
-    answer = ""
-    responses = load_responses()
-    if request.method == "POST":
-        question = request.form.get("question").strip()
-        best_match = None
-        highest_score = 0
-        for q, a in responses.items():
-            score = fuzz.partial_ratio(question.lower(), q.lower())
-            if score > highest_score and score >= 50:
-                highest_score = score
-                best_match = a
-        answer = best_match if best_match else "عذرًا، لا أفهم سؤالك. جرب صياغة أخرى أو تحقق من الدليل."
-    response = make_response(render_template("index.html", answer=answer))
+    response = make_response(render_template("index.html"))
     response.headers['Content-Type'] = 'text/html; charset=utf-8'
     return response
+
+# واجهة الدردشة
+@app.route("/chat", methods=["POST"])
+def chat():
+    question = request.form.get("question").strip()
+    print(f"Received question: {question}")
+    responses = load_responses()
+    print(f"Loaded responses: {responses}")
+    answer = ""
+
+    # تحسين التحية
+    greetings = ["مرحبًا", "السلام عليكم", "الو", "سلام"]
+    if any(greeting in question.lower() for greeting in greetings):
+        possible_greetings = [
+            "أهلاً! كيف يمكنني مساعدتك؟",
+            "مرحبًا بك! ما الذي تحتاجه؟",
+            "سلام! يسعدني مساعدتك، ما سؤالك؟"
+        ]
+        answer = random.choice(possible_greetings)
+        print(f"Answer (greeting): {answer}")
+    else:
+        # البحث في قاعدة البيانات أولاً
+        for q, a in responses.items():
+            if question.lower().strip() in q.lower() or q.lower() in question.lower().strip():
+                answer = a
+                print(f"Answer found in database: {answer}")
+                break
+        else:
+            # استخدام DeepSeek API
+            answer = get_ai_response(question)
+            print(f"Answer from DeepSeek API: {answer}")
+
+    return jsonify({"answer": answer})
 
 # صفحة فتح تذكرة
 @app.route("/report", methods=["GET", "POST"])
@@ -166,10 +220,19 @@ def delete_ticket():
     return redirect(url_for("report"))
 
 # الدليل التفاعلي
-@app.route("/guide")
+@app.route("/guide", methods=["GET", "POST"])
 def guide():
     responses = load_responses()
-    response = make_response(render_template("guide.html", responses=responses))
+    search_query = request.form.get("search_query", "").strip()
+    search_message = ""
+
+    if request.method == "POST" and search_query:
+        filtered_responses = {q: a for q, a in responses.items() if search_query.lower() in q.lower() or search_query.lower() in a.lower()}
+        if not filtered_responses:
+            search_message = "لم يتم العثور على نتائج مطابقة."
+        responses = filtered_responses
+
+    response = make_response(render_template("guide.html", responses=responses, search_query=search_query, search_message=search_message))
     response.headers['Content-Type'] = 'text/html; charset=utf-8'
     return response
 
@@ -177,6 +240,13 @@ def guide():
 @app.route("/about")
 def about():
     response = make_response(render_template("about.html"))
+    response.headers['Content-Type'] = 'text/html; charset=utf-8'
+    return response
+
+# صفحة المصممين
+@app.route("/designers")
+def designers():
+    response = make_response(render_template("designers.html"))
     response.headers['Content-Type'] = 'text/html; charset=utf-8'
     return response
 
