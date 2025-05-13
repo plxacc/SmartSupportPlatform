@@ -36,10 +36,6 @@
             margin-bottom: 15px;
             animation: fadeIn 1s ease;
         }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
         .chat-container {
             border: 2px solid #81c784;
             border-radius: 10px;
@@ -254,6 +250,7 @@
             }
 
             input.value = ''; // مسح حقل الإدخال بعد الإرسال
+            input.placeholder = 'أدخل سؤالاً آخر...'; // تغيير الـ placeholder بعد الإرسال
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
